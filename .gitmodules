@@ -4,3 +4,6 @@
 [submodule "src/libwebp"]
 	path = src/libwebp
 	url = https://github.com/webmproject/libwebp.git
+[submodule "src/openfx"]
+	path = src/openfx
+	url = https://github.com/NatronGitHub/openfx.git
