@@ -32,10 +32,15 @@ RIFE::RIFE(int gpuid, bool _tta_mode, bool _uhd_mode, int _num_threads, bool _ri
     uhd_mode = _uhd_mode;
     num_threads = _num_threads;
     rife_v2 = _rife_v2;
+    printf("tta_mode: %s\n", _tta_mode ? "true" : "false");
+    printf("uhd_mode: %s\n", _uhd_mode ? "true" : "false");
+    printf("num_threads: %d\n", _num_threads);
+    printf("rife_v2: %s\n", _rife_v2 ? "true" : "false");
 }
 
 RIFE::~RIFE()
-{
+{   
+    printf("RIFE destructor\n");
     // cleanup preprocess and postprocess pipeline
     {
         delete rife_preproc;
@@ -111,14 +116,17 @@ int RIFE::load(const std::wstring& modeldir)
 #else
 int RIFE::load(const std::string& modeldir)
 #endif
-{
+{   
+    printf("RIFE loader, loading: %s\n", modeldir.c_str());
+
     ncnn::Option opt;
-    opt.num_threads = num_threads;
+    opt.num_threads = 1;
     opt.use_vulkan_compute = vkdev ? true : false;
     opt.use_fp16_packed = true;
     opt.use_fp16_storage = true;
     opt.use_fp16_arithmetic = false;
-    opt.use_int8_storage = true;
+    opt.use_int8_storage = false;
+    opt.lightmode = false;
 
     flownet.opt = opt;
     contextnet.opt = opt;
@@ -276,6 +284,7 @@ int RIFE::load(const std::string& modeldir)
         }
     }
 
+    printf("RIFE loader, loaded: %s\n", modeldir.c_str());
     return 0;
 }
 
@@ -323,6 +332,10 @@ int RIFE::process(const ncnn::Mat& in0image, const ncnn::Mat& in1image, float ti
 
     ncnn::Mat in0;
     ncnn::Mat in1;
+    
+    // in0 = in0image;
+    // in1 = in1image;
+
     if (opt.use_fp16_storage && opt.use_int8_storage)
     {
         in0 = ncnn::Mat(w, h, (unsigned char*)pixel0data, (size_t)channels, 1);
@@ -334,10 +347,29 @@ int RIFE::process(const ncnn::Mat& in0image, const ncnn::Mat& in1image, float ti
         in0 = ncnn::Mat::from_pixels(pixel0data, ncnn::Mat::PIXEL_BGR2RGB, w, h);
         in1 = ncnn::Mat::from_pixels(pixel1data, ncnn::Mat::PIXEL_BGR2RGB, w, h);
 #else
-        in0 = ncnn::Mat::from_pixels(pixel0data, ncnn::Mat::PIXEL_RGB, w, h);
-        in1 = ncnn::Mat::from_pixels(pixel1data, ncnn::Mat::PIXEL_RGB, w, h);
+        // in0 = ncnn::Mat::from_pixels(pixel0data, ncnn::Mat::PIXEL_RGB, w, h);
+        // in1 = ncnn::Mat::from_pixels(pixel1data, ncnn::Mat::PIXEL_RGB, w, h);
+        in0 = in0image;
+        in1 = in1image;
 #endif
     }
+
+    printf("in0.w %d\n", in0.w);
+    printf("in0.h %d\n", in0.h);
+    printf("in0.c %d\n", in0.c);
+    printf("in0.dims %d\n", in0.dims);
+    printf("in0.elemszie %lu\n", in0.elemsize);
+    printf("in0.elempack %d\n", in0.elempack);
+    const float* ptr = in0.channel(0);
+    printf("%f\n", ptr[0]);
+    printf("%f\n", ptr[1]);
+    printf("%f\n", ptr[2]);
+    printf("%f\n", ptr[3]);
+    ptr += in0.w;
+    printf("%f\n", ptr[0]);
+    printf("%f\n", ptr[1]);
+    printf("%f\n", ptr[2]);
+    printf("%f\n", ptr[3]);
 
     ncnn::VkCompute cmd(vkdev);
 

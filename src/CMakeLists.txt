@@ -10,7 +10,7 @@ set(CMAKE_BUILD_TYPE Release)
 
 option(USE_SYSTEM_NCNN "build with system libncnn" OFF)
 option(USE_SYSTEM_WEBP "build with system libwebp" OFF)
-option(USE_STATIC_MOLTENVK "link moltenvk static library" OFF)
+option(USE_STATIC_MOLTENVK "link moltenvk static library" ON)
 
 find_package(Threads)
 find_package(OpenMP)
@@ -100,8 +100,8 @@ if(NOT USE_SYSTEM_NCNN)
     option(NCNN_BUILD_TESTS "" OFF)
     option(NCNN_BUILD_TOOLS "" OFF)
     option(NCNN_BUILD_EXAMPLES "" OFF)
-    option(NCNN_DISABLE_RTTI "" ON)
-    option(NCNN_DISABLE_EXCEPTION "" ON)
+    option(NCNN_DISABLE_RTTI "" OFF)
+    option(NCNN_DISABLE_EXCEPTION "" OFF)
 
     option(WITH_LAYER_absval "" OFF)
     option(WITH_LAYER_argmax "" OFF)
@@ -231,8 +231,25 @@ rife_add_shader(warp_pack8.comp)
 
 add_custom_target(generate-spirv DEPENDS ${SHADER_SPV_HEX_FILES})
 
+# fbout block
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ncnn/python/pybind11/include)
+include_directories(/Users/andrew/miniconda3/envs/ncnn/include/python3.8)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 add_executable(rife-ncnn-vulkan
     main.cpp
+    # rife_ncnn_vulkan.cpp 
+    rife.cpp
+    warp.cpp
+)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ncnn/src)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/ncnn/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../vulkansdk-macos-1.2.141.2/MoltenVK/include)
+# option(NCNN_PYTHON "" ON)
+add_subdirectory(ncnn/python/pybind11)
+pybind11_add_module(rife_ncnn_vulkan
+    rife_ncnn_vulkan.cpp 
     rife.cpp
     warp.cpp
 )
@@ -264,3 +281,4 @@ if(USE_STATIC_MOLTENVK)
 endif()
 
 target_link_libraries(rife-ncnn-vulkan ${RIFE_LINK_LIBRARIES})
+target_link_libraries(rife_ncnn_vulkan PRIVATE ${RIFE_LINK_LIBRARIES})
